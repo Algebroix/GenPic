@@ -5,14 +5,14 @@ import random
 
 
 class Params:
-    size = (0, 0)
+    size = (1, 1)
     min_rotation = 0.0
     max_rotation = 360.0
 #probabilities of applying flip
     flip_horizontal = 0.5
     flip_vertical = 0.5
 
-    def __init__(self, size=(0, 0), min_rotation=0.0, max_rotation=360.0, flip_horizontal=0.5, flip_vertical=0.5):
+    def __init__(self, size, min_rotation=0.0, max_rotation=360.0, flip_horizontal=0.5, flip_vertical=0.5):
         self.size = size
         self.min_rotation = min_rotation
         self.max_rotation = max_rotation
@@ -54,6 +54,6 @@ def process_image(input_path, output_count, params):
 
 input_folder = "/home/kwoznicki/Documents/GenPic/data"
 paths = os.listdir(input_folder)
-parameters = Params()
+parameters = Params((1000, 800))
 for path in paths:
     process_image(input_folder + "/" + path, 3, parameters)
