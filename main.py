@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+import sys
 from datetime import datetime
 import random
 
@@ -20,15 +21,15 @@ class Params:
         self.flip_vertical = flip_vertical
 
 
-def process_image(input_path, output_count, params):
-    name = os.path.splitext(input_path)[0]
+def process_image(input_path, output_folder, output_count, params):
+    name = os.path.splitext(os.path.basename(input_path))[0]
     extension = os.path.splitext(input_path)[1]
 
-    if extension not in {".png", ".jpg"}:
+    if extension not in {".png", ".jpg", ".jpeg"}:
         return
 
     date = datetime.now()
-    output_folder = name + date.strftime("%m-%d-%Y-%H-%M-%S")
+    output_folder += "/" + name + date.strftime("%m-%d-%Y-%H-%M-%S")
 
     image_index = 0
     while image_index < output_count:
@@ -48,12 +49,21 @@ def process_image(input_path, output_count, params):
             file = file.transpose(Image.FLIP_TOP_BOTTOM)
 
         file = file.resize(params.size)
-        file.save(output_path, "PNG")
+        file.save(output_path, extension[1:])
         image_index += 1
 
 
-input_folder = "/home/kwoznicki/Documents/GenPic/data"
-paths = os.listdir(input_folder)
+if len(sys.argv) < 2:
+    in_folder = os.getcwd()
+else:
+    in_folder = sys.argv[1]
+if len(sys.argv) == 3:
+    out_folder = sys.argv[2]
+else:
+    out_folder = in_folder
+
+paths = os.listdir(in_folder)
 parameters = Params((1000, 800))
 for path in paths:
-    process_image(input_folder + "/" + path, 3, parameters)
+    process_image(in_folder + "/" + path, out_folder, 3, parameters)
+
