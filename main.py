@@ -14,7 +14,13 @@ class Params:
     width = 0
     height = 0
 
-    def __init__(self, size=[0, 0], min_rotation=0.0, max_rotation=360.0, flip_horizontal=0.5, flip_vertical=0.5, width=0,
+    def __init__(self,
+                 size=[0, 0],
+                 min_rotation=0.0,
+                 max_rotation=360.0,
+                 flip_horizontal=0.5,
+                 flip_vertical=0.5,
+                 width=0,
                  height=0):
         self.size = size
         self.min_rotation = min_rotation
