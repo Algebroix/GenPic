@@ -1,4 +1,6 @@
 from PIL import Image
+from PIL import ImageEnhance
+from PIL import ImageFilter
 import os
 from datetime import datetime
 import random
@@ -13,6 +15,11 @@ class Params:
     flip_vertical = 0.5
     width = 0
     height = 0
+    edges = False
+    color = 1.0
+    brightness = 1.0
+    contrast = 1.0
+    sharpness = 1.0
 
     def __init__(self,
                  size=[0, 0],
@@ -21,7 +28,12 @@ class Params:
                  flip_horizontal=0.5,
                  flip_vertical=0.5,
                  width=0,
-                 height=0):
+                 height=0,
+                 edges=False,
+                 color=1.0,
+                 brightness=1.0,
+                 contrast=1.0,
+                 sharpness=1.0):
         self.size = size
         self.min_rotation = min_rotation
         self.max_rotation = max(min_rotation, max_rotation)
@@ -29,6 +41,11 @@ class Params:
         self.flip_vertical = flip_vertical
         self.width = width
         self.height = height
+        self.edges = edges
+        self.color = color
+        self.brightness = brightness
+        self.contrast = contrast
+        self.sharpness = sharpness
 
 
 def process_image(input_path, output_folder, output_count, params):
@@ -76,6 +93,22 @@ def apply_transformations(file, params):
     if random.random() < params.flip_vertical:
         file = file.transpose(Image.FLIP_TOP_BOTTOM)
 
+    file = file.convert("RGB")
+    if params.edges:
+        file = file.filter(ImageFilter.FIND_EDGES)
+
+    enhancer = ImageEnhance.Brightness(file)
+    file = enhancer.enhance(params.brightness)
+
+    enhancer = ImageEnhance.Contrast(file)
+    file = enhancer.enhance(params.contrast)
+
+    enhancer = ImageEnhance.Sharpness(file)
+    file = enhancer.enhance(params.sharpness)
+
+    enhancer = ImageEnhance.Color(file)
+    file = enhancer.enhance(params.color)
+
     return file.resize(tuple(params.size))
 
 
@@ -96,7 +129,12 @@ def main(args):
                         flip_horizontal=args.fliph,
                         flip_vertical=args.flipv,
                         width=args.width,
-                        height=args.height)
+                        height=args.height,
+                        edges=args.edges,
+                        color=args.color,
+                        brightness=args.brightness,
+                        sharpness=args.sharpness,
+                        contrast=args.contrast)
 
     path_index = 0
     while path_index < len(paths):
@@ -151,6 +189,27 @@ def parse_arguments():
                         default=[0, 0],
                         nargs="+",
                         type=int)
+    parser.add_argument("--edges",
+                        help="Detect edges",
+                        default=False,
+                        type=bool)
+    parser.add_argument("--color",
+                        help="Adjust color balance. 0.0 is black and white, 1.0 is original",
+                        default=1.0,
+                        type=float)
+    parser.add_argument("--brightness",
+                        help="Adjust brightness. 0.0 is black, 1.0 is original",
+                        default=1.0,
+                        type=float)
+    parser.add_argument("--contrast",
+                        help="Adjust contrast. 0.0 is solid grey, 1.0 is original",
+                        default=1.0,
+                        type=float)
+    parser.add_argument("--sharpness",
+                        help="Adjust sharpness. 0.0 is blurred, 1.0 is original, 2.0 is sharpened",
+                        default=1.0,
+                        type=float)
+
     return parser.parse_args()
 
 
