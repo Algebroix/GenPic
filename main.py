@@ -1,3 +1,4 @@
+
 from PIL import Image
 from PIL import ImageEnhance
 from PIL import ImageFilter
@@ -5,58 +6,33 @@ import os
 from datetime import datetime
 import random
 import argparse
+from dataclasses import dataclass
 
 
+@dataclass
 class Params:
-    size = [0, 0]
-    min_rotation = 0.0
-    max_rotation = 360.0
-    flip_horizontal = 0.5
-    flip_vertical = 0.5
-    width = 0
-    height = 0
-    edges = False
-    color = 1.0
-    brightness = 1.0
-    contrast = 1.0
-    sharpness = 1.0
 
-    def __init__(self,
-                 size=[0, 0],
-                 min_rotation=0.0,
-                 max_rotation=360.0,
-                 flip_horizontal=0.5,
-                 flip_vertical=0.5,
-                 width=0,
-                 height=0,
-                 edges=False,
-                 color=1.0,
-                 brightness=1.0,
-                 contrast=1.0,
-                 sharpness=1.0):
-        self.size = size
-        self.min_rotation = min_rotation
-        self.max_rotation = max(min_rotation, max_rotation)
-        self.flip_horizontal = flip_horizontal
-        self.flip_vertical = flip_vertical
-        self.width = width
-        self.height = height
-        self.edges = edges
-        self.color = color
-        self.brightness = brightness
-        self.contrast = contrast
-        self.sharpness = sharpness
+    size: dict = None
+    min_rotation: float = 0.0
+    max_rotation: float = 360.0
+    flip_horizontal: float = 0.5
+    flip_vertical: float = 0.5
+    crop_width: int = 0
+    crop_height: int = 0
+    edges: bool = False
+    color: float = 1.0
+    brightness: float = 1.0
+    contrast: float = 1.0
+    sharpness: float = 1.0
 
 
 def process_image(input_path, output_folder, output_count, params):
-    name = os.path.splitext(os.path.basename(input_path))[0]
+    name, extension = os.path.splitext(os.path.basename(input_path))
     date = datetime.now()
-    output_folder += "/" + name + date.strftime("%m-%d-%Y-%H-%M-%S")
+    output_folder = os.path.join(output_folder, "_".join([name, date.strftime("%m-%d-%Y-%H-%M-%S")]))
 
-    extension = os.path.splitext(input_path)[1]
-    image_index = 0
-    while image_index < output_count:
-        output_path = output_folder + "/" + str(image_index) + extension
+    for image_index in range(output_count):
+        output_path = os.path.join(output_folder, "".join([str(image_index), extension]))
         if not os.path.exists(output_folder):
             os.mkdir(output_folder)
 
@@ -65,24 +41,24 @@ def process_image(input_path, output_folder, output_count, params):
         file = apply_transformations(file, params)
 
         file.save(output_path, extension[1:])
-        image_index += 1
 
 
 def apply_transformations(file, params):
-    if file.size[0] < params.width or params.width == 0:
-        params.width = file.size[0]
-    if file.size[1] < params.height or params.height == 0:
-        params.height = file.size[1]
+    file_width, file_height = file.size
 
-    if params.size[0] == 0:
-        params.size[0] = file.size[0]
-    if params.size[1] == 0:
-        params.size[1] = file.size[1]
+    if file_width < params.crop_width or params.crop_width == 0:
+        params.crop_width = file_width
+    if file_height < params.crop_height or params.crop_height == 0:
+        params.crop_height = file_height
 
-    crop_x = random.randint(0, file.size[0] - params.width)
-    crop_y = random.randint(0, file.size[1] - params.height)
+    if params.size is None:
+        params.size["width"] = file_width
+        params.size["height"] = file_height
 
-    file = file.crop((crop_x, crop_y, crop_x + params.width, crop_y + params.height))
+    crop_x = random.randint(0, file_width - params.crop_width)
+    crop_y = random.randint(0, file_height - params.crop_height)
+
+    file = file.crop((crop_x, crop_y, crop_x + params.crop_width, crop_y + params.crop_height))
 
     degrees = random.uniform(params.min_rotation, params.max_rotation)
     file = file.rotate(degrees)
@@ -128,24 +104,24 @@ def main(args):
                         max_rotation=args.maxrot,
                         flip_horizontal=args.fliph,
                         flip_vertical=args.flipv,
-                        width=args.width,
-                        height=args.height,
+                        crop_width=args.cwidth,
+                        crop_height=args.cheight,
                         edges=args.edges,
                         color=args.color,
                         brightness=args.brightness,
                         sharpness=args.sharpness,
                         contrast=args.contrast)
 
-    path_index = 0
-    while path_index < len(paths):
-        ext = os.path.splitext(paths[path_index])[1]
-        if ext not in {".png", ".jpg", ".jpeg"}:
-            paths.remove(paths[path_index])
-        else:
-            path_index += 1
-    for index, path in enumerate(paths):
-        process_image(in_folder + "/" + path, out_folder, int(args.count), parameters)
-        print(str(index + 1) + "/" + str(len(paths)))
+    image_paths = []
+
+    for path in paths:
+        ext = os.path.splitext(path)[1]
+        if ext in {".png", ".jpg", ".jpeg"}:
+            image_paths.append(path)
+
+    for index, path in enumerate(image_paths):
+        process_image(os.path.join(in_folder, path), out_folder, int(args.count), parameters)
+        print("/".join([str(index + 1), str(len(image_paths))]))
 
 
 def parse_arguments():
@@ -176,17 +152,17 @@ def parse_arguments():
                         help="Vertical flip probability",
                         default=0.5,
                         type=float)
-    parser.add_argument("--width",
+    parser.add_argument("--cwidth",
                         help="Width of crop window. Default (0) results in not cropping image",
                         default=0,
                         type=int)
-    parser.add_argument("--height",
+    parser.add_argument("--cheight",
                         help="Height of crop window. Default (0) results in not cropping image",
                         default=0,
                         type=int)
     parser.add_argument("--size",
                         help="Output images size in format A,B. Default ((0,0)) results in not changing image size",
-                        default=[0, 0],
+                        default=None,
                         nargs="+",
                         type=int)
     parser.add_argument("--edges",
@@ -213,4 +189,5 @@ def parse_arguments():
     return parser.parse_args()
 
 
-main(parse_arguments())
+if __name__ == '__main__':
+    main(parse_arguments())
