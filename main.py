@@ -27,48 +27,55 @@ class Params:
 
 
 def process_image(input_path: str, output_folder: str, output_count: int, params: Params):
+    # Modify output folder based on input image name.
+    # Add current date to name to avoid future overwriting.
     name, extension = os.path.splitext(os.path.basename(input_path))
     date: str = datetime.now()
     output_folder = os.path.join(output_folder, "_".join([name, date.strftime("%m-%d-%Y-%H-%M-%S")]))
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
 
+    # Process input image output_count times and name output images by index.
     for image_index in range(output_count):
         output_path: str = os.path.join(output_folder, "".join([str(image_index), extension]))
-        if not os.path.exists(output_folder):
-            os.mkdir(output_folder)
 
         image: Image = Image.open(input_path)
-
         image = apply_transformations(image, params)
-
         image.save(output_path, extension[1:])
 
 
 def apply_transformations(image: Image, params: Params):
     image_width, image_height = image.size
 
+    # If crop dimensions are set to 0 or exceed image dimensions set crop dimensions to image dimensions.
     if image_width < params.crop_width or params.crop_width == 0:
         params.crop_width = image_width
     if image_height < params.crop_height or params.crop_height == 0:
         params.crop_height = image_height
 
+    # If size parameter is not given set size of image to the size of input image.
     if params.size is None:
         params.size["width"] = image_width
         params.size["height"] = image_height
 
+    # Coordinates of upper left corner of crop window are random values such that image contains window.
     crop_x: int = random.randint(0, image_width - params.crop_width)
     crop_y: int = random.randint(0, image_height - params.crop_height)
 
     image = image.crop((crop_x, crop_y, crop_x + params.crop_width, crop_y + params.crop_height))
 
+    # Rotation degree is random value between min_rotation and max_rotation parameters.
     degrees: float = random.uniform(params.min_rotation, params.max_rotation)
     image = image.rotate(degrees)
 
+    # Flip parameters are equal to probability of applying flip.
     if random.random() < params.flip_horizontal:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
     if random.random() < params.flip_vertical:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
+    # Apply all filters. Default filter parameters result in not changing input image.
     image = image.convert("RGB")
     if params.edges:
         image = image.filter(ImageFilter.FIND_EDGES)
@@ -85,6 +92,7 @@ def apply_transformations(image: Image, params: Params):
     enhancer = ImageEnhance.Color(image)
     image = enhancer.enhance(params.color)
 
+    # Return resized image to match requested output dimensions.
     return image.resize(tuple(params.size))
 
 
@@ -105,6 +113,7 @@ def main(args):
 
     paths: list = []
 
+    # If recurse option was given in args fill paths variable with all files from sub folders.
     if args.recurse:
         for root, directories, names in os.walk(args.input):
             for name in names:
@@ -124,7 +133,8 @@ def main(args):
                                 brightness=args.brightness,
                                 sharpness=args.sharpness,
                                 contrast=args.contrast)
-
+    # From all paths pick only png and jpg images.
+    # Don't process while checking because number of all images to process is needed for printing progress.
     image_paths: list = []
 
     for path in paths:
@@ -135,6 +145,7 @@ def main(args):
     if len(image_paths) == 0:
         print("No images to process in input folder")
 
+    # Process images and print which image is being processed from how many.
     for index, path in enumerate(image_paths):
         process_image(os.path.join(args.input, path), args.output, int(args.count), parameters)
         print("/".join([str(index + 1), str(len(image_paths))]))
