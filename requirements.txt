@@ -1,0 +1,2 @@
+dataclasses==0.6
+Pillow==6.1.0
