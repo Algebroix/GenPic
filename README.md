@@ -3,10 +3,10 @@
 For given directory this script creates sets of randomly transformed images based on images in directory and supplied arguments.
 
 ## Usage
-Run by typing '''python3''' followed by path to script and arguments, e.g. '''python3 genpic.py 10 input output'''.
+Run by typing ```python3``` followed by path to script and arguments, e.g. ```python3 genpic.py 10 input output```.
 
 ## Command line arguments
-'''
+```
 positional arguments:
   count                 Output images count for each input image
   input                 Input folder
@@ -35,4 +35,4 @@ optional arguments:
                         Adjust sharpness. 0.0 is blurred, 1.0 is original, 2.0
                         is sharpened
   -r, --recurse         Process images in all child directories
-'''
+```
