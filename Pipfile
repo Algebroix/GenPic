@@ -7,7 +7,7 @@ verify_ssl = true
 
 [packages]
 dataclasses = "==0.6"
-Pillow = "==6.1.0"
+Pillow = "==6.2.0"
 
 [requires]
 python_version = "3.7"
